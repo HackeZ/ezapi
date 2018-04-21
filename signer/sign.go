@@ -49,9 +49,11 @@ func New(appKey, secretKey string, method Method) (*Sign, error) {
 		sign.signer = &hmac.HMAC{}
 	case METH_MD5:
 		sign.signer = &md5.MD5{}
+	default:
+		return nil, fmt.Errorf("unknown method of sign")
 	}
 
-	return nil, fmt.Errorf("unknown method of sign")
+	return sign, nil
 }
 
 // Sum available sign by api method/version and bussiness params
@@ -65,6 +67,8 @@ func (s *Sign) Sum(method, version string, params map[string]string) (string, er
 	args["timestamp"] = time.Now().Format(FMT_TIMESTAMP)
 	args["version"] = version
 
+	//args["timestamp"] = "2017-08-14 16:10:23" // WARNING: JUST FOR TEST
+
 	// bussiness args if not null
 	if params != nil {
 		for k := range params {
@@ -74,6 +78,7 @@ func (s *Sign) Sum(method, version string, params map[string]string) (string, er
 
 	token := argsFilter(args)
 	token = url.QueryEscape(token)
+	fmt.Println("token: ", token)
 
 	sign, err := s.signer.Get(s.key, token)
 	if err != nil {
@@ -90,7 +95,7 @@ func argsFilter(args map[string]string) string {
 		if k == "sign" { // ignore args of sign
 			continue
 		}
-		list = append(list, fmt.Sprintf("%s=%s", k, v))
+		list = append(list, fmt.Sprintf("%s%s", k, v))
 	}
 
 	// sort by lexicographical order
