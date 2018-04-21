@@ -23,6 +23,14 @@ type Sign struct {
 	signer signer.Signer
 }
 
+// Method of sign hashing algorithm
+type Method string
+
+const (
+	METH_HMAC Method = "hmac"
+	METH_MD5  Method = "md5"
+)
+
 // New return available signer to sum sign
 func New(appKey, secretKey string, method Method) (*Sign, error) {
 	if appKey == "" || secretKey == "" {
@@ -47,7 +55,7 @@ func New(appKey, secretKey string, method Method) (*Sign, error) {
 }
 
 // Sum available sign by api method/version and bussiness params
-func (s *Sign) Sum(method, version string, params string) (string, error) {
+func (s *Sign) Sum(method, version string, params map[string]string) (string, error) {
 	args := make(map[string]string)
 
 	// public args
@@ -58,8 +66,10 @@ func (s *Sign) Sum(method, version string, params string) (string, error) {
 	args["version"] = version
 
 	// bussiness args if not null
-	if params != "" {
-		args["ezbuy_json_param"] = strings.TrimSpace(params)
+	if params != nil {
+		for k := range params {
+			args[k] = params[k]
+		}
 	}
 
 	token := argsFilter(args)
@@ -80,7 +90,7 @@ func argsFilter(args map[string]string) string {
 		if k == "sign" { // ignore args of sign
 			continue
 		}
-		list = append(list, fmt.Sprintf("%s%s", k, v))
+		list = append(list, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	// sort by lexicographical order
